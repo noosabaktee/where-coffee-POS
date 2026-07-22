@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('customers', function (Blueprint $table): void {
+            $table->id();
+            $table->string('member_code', 40)->unique();
+            $table->string('name', 150);
+            $table->string('phone', 30)->unique();
+            $table->string('email')->nullable()->unique();
+            $table->string('tier', 20)->default('Bronze')->index();
+            $table->integer('points')->default(0);
+            $table->date('birth_date')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('last_visit_at')->nullable();
+            $table->boolean('is_active')->default(true)->index();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('customers');
+    }
+};
