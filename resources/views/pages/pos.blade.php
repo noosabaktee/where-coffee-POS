@@ -71,7 +71,9 @@
       <div id="qrisPayArea" class="hidden flex flex-col items-center bg-white p-3 rounded-2xl border border-slate-200 text-center space-y-2">
         <div class="text-[10px] font-bold text-slate-400">SCAN QRIS STATIS</div>
         <div id="qrisContainer" class="w-44 h-44 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-100">
-          <img src="{{ asset('images/qris/where-coffee-qris.png') }}" class="w-full h-full object-contain p-2" alt="QRIS statis Where Coffee">
+          <button type="button" onclick="openQrisModal()" class="h-full w-full rounded-xl bg-white p-2 transition-all hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-red-100" aria-label="Perbesar QRIS untuk scan">
+            <img src="{{ asset('images/qris/where-coffee-qris.png') }}" class="h-full w-full object-contain" alt="QRIS statis Where Coffee">
+          </button>
         </div>
       </div>
 
@@ -83,4 +85,20 @@
 
 @push('modals')
   @include('partials.modals.invoice')
+  <div id="qrisPreviewModal" class="fixed inset-0 z-[10002] hidden overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="qrisPreviewTitle" onclick="handleQrisModalBackdrop(event)">
+    <div class="min-h-full flex items-center justify-center">
+      <div data-qris-preview-panel class="relative w-full max-w-lg rounded-3xl border border-white/20 bg-white p-4 shadow-2xl" onclick="event.stopPropagation()">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 id="qrisPreviewTitle" class="text-sm font-extrabold text-slate-950">Scan QRIS</h3>
+            <p class="text-[10px] font-medium text-slate-400">Perbesar layar ini untuk memudahkan pembayaran.</p>
+          </div>
+          <button type="button" onclick="closeQrisModal()" class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Tutup QRIS"><i class="bx bx-x text-2xl"></i></button>
+        </div>
+        <div class="aspect-square w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-4">
+          <img id="qrisPreviewImage" class="h-full w-full object-contain" alt="QRIS statis Where Coffee">
+        </div>
+      </div>
+    </div>
+  </div>
 @endpush

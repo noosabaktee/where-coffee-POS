@@ -168,6 +168,19 @@ function escapeHtml(value = '') {
   }[character]));
 }
 
+function imageSource(value) {
+  if (!value) return '';
+  if (String(value).startsWith('data:image/')) return value;
+  try {
+    return new URL(value, window.location.origin).href;
+  } catch (_) {
+    return value;
+  }
+}
+
+function imageValueChanged(nextValue, currentValue) {
+  return Boolean(nextValue) && imageSource(nextValue) !== imageSource(currentValue);
+}
 
 function parseFormattedNumber(value) {
   const digits = String(value ?? '').replace(/[^0-9]/g, '');
@@ -415,12 +428,26 @@ function loadConfiguration() {
 
 function updateAppLogos() {
   const defaultSvg = `<svg class="w-full h-full p-2" viewBox="0 0 100 100" fill="none" aria-label="Logo kopi"><path d="M23 39h49v23c0 17-10 28-24.5 28S23 79 23 62V39Z" fill="white"/><path d="M72 46h7c14 0 14 19 0 19h-7" stroke="white" stroke-width="7" stroke-linecap="round"/><path d="M37 31c-7-7 7-10 0-20M50 31c-7-7 7-10 0-20M63 31c-7-7 7-10 0-20" stroke="#fecaca" stroke-width="5" stroke-linecap="round"/></svg>`;
-  ['loginLogoContainer', 'sidebarLogoContainer', 'recLogoContainer'].forEach((id) => {
+  const logoSource = imageSource(config.storeLogo);
+  ['loginLogoContainer', 'sidebarLogoContainer'].forEach((id) => {
     const element = byId(id);
-    if (element) element.innerHTML = config.storeLogo ? `<img src="${escapeHtml(config.storeLogo)}" class="w-full h-full object-cover" alt="Logo toko">` : defaultSvg;
+    if (!element) return;
+    element.innerHTML = logoSource ? `<img src="${escapeHtml(logoSource)}" class="w-full h-full object-cover" alt="Logo toko">` : defaultSvg;
+    element.querySelector('img')?.addEventListener('error', () => { element.innerHTML = defaultSvg; }, { once: true });
   });
+  updateReceiptLogo(defaultSvg, logoSource);
   if (byId('loginStoreName')) byId('loginStoreName').textContent = config.storeName.toUpperCase();
   // if (byId('sidebarStoreName')) byId('sidebarStoreName').textContent = config.storeName;
+}
+
+function updateReceiptLogo(defaultSvg, logoSource = imageSource(config.storeLogo)) {
+  const element = byId('recLogoContainer');
+  if (!element) return;
+  const fallback = `<span class="inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg bg-[#C00000] text-white">${defaultSvg}</span>`;
+  element.innerHTML = logoSource
+    ? `<span class="inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-1"><img src="${escapeHtml(logoSource)}" class="h-full w-full object-contain" alt="Logo toko"></span>`
+    : fallback;
+  element.querySelector('img')?.addEventListener('error', () => { element.innerHTML = fallback; }, { once: true });
 }
 function renderRolePermissionsForm() {
   const container = byId('rolePermissionsContainer');
@@ -455,10 +482,14 @@ async function saveSettings(event) {
     tax_rate: readNumberInput('setTaxRate'),
     service_charge_rate: readNumberInput('setServiceCharge'),
   };
-  if (logoValue.startsWith('data:image/')) body.logo_data = logoValue;
-  else if (/^https?:\/\//i.test(logoValue)) body.logo_url = logoValue;
-  if (qrisValue.startsWith('data:image/')) body.qris_data = qrisValue;
-  else if (/^https?:\/\//i.test(qrisValue)) body.qris_url = qrisValue;
+  if (imageValueChanged(logoValue, config.storeLogo)) {
+    if (logoValue.startsWith('data:image/')) body.logo_data = logoValue;
+    else if (/^https?:\/\//i.test(logoValue)) body.logo_url = logoValue;
+  }
+  if (imageValueChanged(qrisValue, config.qrisImage)) {
+    if (qrisValue.startsWith('data:image/')) body.qris_data = qrisValue;
+    else if (/^https?:\/\//i.test(qrisValue)) body.qris_url = qrisValue;
+  }
 
   try {
     setActionLoading(true, 'Menyimpan pengaturan...');
@@ -928,8 +959,30 @@ function setPaymentMode(mode) {
 function generateQRISCode() {
   const container = byId('qrisContainer');
   if (!container) return;
-  const source = config.qrisImage || '/images/qris/where-coffee-qris.png';
-  container.innerHTML = `<img src="${escapeHtml(source)}" class="w-full h-full object-contain p-2" alt="QRIS statis Where Coffee">`;
+  const source = imageSource(config.qrisImage || '/images/qris/where-coffee-qris.png');
+  container.innerHTML = `<button type="button" onclick="openQrisModal()" class="h-full w-full rounded-xl bg-white p-2 transition-all hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-red-100" aria-label="Perbesar QRIS untuk scan"><img src="${escapeHtml(source)}" class="h-full w-full object-contain" alt="QRIS statis Where Coffee"></button>`;
+}
+
+function openQrisModal() {
+  const modal = byId('qrisPreviewModal');
+  const image = byId('qrisPreviewImage');
+  if (!modal || !image) return;
+  const source = imageSource(config.qrisImage || '/images/qris/where-coffee-qris.png');
+  image.src = source;
+  modal.classList.remove('hidden');
+  window.setTimeout(() => modal.querySelector('button[aria-label="Tutup QRIS"]')?.focus(), 50);
+}
+
+function closeQrisModal() {
+  const modal = byId('qrisPreviewModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  const image = byId('qrisPreviewImage');
+  if (image) image.removeAttribute('src');
+}
+
+function handleQrisModalBackdrop(event) {
+  if (!event.target.closest('[data-qris-preview-panel]')) closeQrisModal();
 }
 
 function simulateQRISSuccess() {
@@ -1649,6 +1702,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !byId('invoiceModal')?.classList.contains('hidden')) closeInvoiceModal();
+    if (event.key === 'Escape' && !byId('qrisPreviewModal')?.classList.contains('hidden')) closeQrisModal();
     if (event.key === 'Escape' && !byId('confirmModal')?.classList.contains('hidden')) {
       byId('confirmModal')?.classList.add('hidden');
       pendingConfirmAction = null;
