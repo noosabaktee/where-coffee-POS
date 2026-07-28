@@ -63,4 +63,18 @@ class FrontendRevisionTest extends TestCase
             ->assertSee('action-steam', false)
             ->assertDontSee('globalLoadingOverlay', false);
     }
+
+    public function test_inventory_contains_image_preview_and_active_status_filter(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get('/inventori')
+            ->assertOk()
+            ->assertSee('pImgPreview', false)
+            ->assertSee('inventoryStatusFilter', false)
+            ->assertSee('<option value="active" selected>Produk Aktif</option>', false)
+            ->assertSee('Status Produk');
+    }
 }

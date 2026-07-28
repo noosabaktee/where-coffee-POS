@@ -526,9 +526,41 @@ async function resetDatabaseSetting() {
   });
 }
 
-function handleImageCompress(event) { compressFileBase(event, 900, 700, (base64) => { byId('pImgUrl').value = base64; }); }
+function handleImageCompress(event) {
+  compressFileBase(event, 900, 700, (base64) => {
+    byId('pImgUrl').value = base64;
+    updateProductImagePreview(base64);
+  });
+}
 function handleQrisCompress(event) { compressFileBase(event, 600, 600, (base64) => { byId('setQrisUrl').value = base64; }); }
 function handleLogoCompress(event) { compressFileBase(event, 500, 500, (base64) => { byId('setStoreLogoUrl').value = base64; }); }
+
+function updateProductImagePreview(value = '') {
+  const preview = byId('pImgPreview');
+  const empty = byId('pImgPreviewEmpty');
+  const emptyText = byId('pImgPreviewEmptyText');
+  if (!preview || !empty) return;
+
+  const source = imageSource(String(value).trim());
+  if (!source) {
+    preview.removeAttribute('src');
+    preview.classList.add('hidden');
+    empty.classList.remove('hidden');
+    if (emptyText) emptyText.textContent = 'Preview gambar akan tampil di sini';
+    return;
+  }
+
+  preview.onload = () => {
+    preview.classList.remove('hidden');
+    empty.classList.add('hidden');
+  };
+  preview.onerror = () => {
+    preview.classList.add('hidden');
+    empty.classList.remove('hidden');
+    if (emptyText) emptyText.textContent = 'Gambar tidak dapat dimuat';
+  };
+  preview.src = source;
+}
 
 function compressFileBase(event, maxWidth, maxHeight, callback) {
   const file = event.target.files?.[0];
@@ -1218,19 +1250,30 @@ function renderInventory() {
   if (!body) return;
   const query = (byId('inventorySearch')?.value || '').toLowerCase();
   const categoryId = byId('inventoryCategoryFilter')?.value || '';
-  const filtered = products.filter((product) => (product.name.toLowerCase().includes(query) || product.barcode.toLowerCase().includes(query) || product.sku.toLowerCase().includes(query)) && (!categoryId || String(product.category_id) === String(categoryId)));
-  const visible = pageSlice('inventory', filtered, `${query}|${categoryId}`);
+  const status = byId('inventoryStatusFilter')?.value || 'active';
+  const filtered = products.filter((product) => {
+    const matchesQuery = product.name.toLowerCase().includes(query) || product.barcode.toLowerCase().includes(query) || product.sku.toLowerCase().includes(query);
+    const matchesCategory = !categoryId || String(product.category_id) === String(categoryId);
+    const matchesStatus = status === 'all' || (status === 'active' ? product.is_active !== false : product.is_active === false);
+    return matchesQuery && matchesCategory && matchesStatus;
+  });
+  const visible = pageSlice('inventory', filtered, `${query}|${categoryId}|${status}`);
   byId('inventoryEmptyState')?.classList.toggle('hidden', filtered.length > 0);
   body.innerHTML = visible.map((product) => {
     const low = product.stock <= product.minStock;
     const out = product.stock <= 0;
-    return `<tr class="hover:bg-slate-50 transition-all text-xs">
+    const isActive = product.is_active !== false;
+    const statusAction = isActive
+      ? `<button type="button" onclick="deleteProduct(${product.id})" title="Hapus atau nonaktifkan produk" aria-label="Hapus atau nonaktifkan ${escapeHtml(product.name)}" class="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-400 rounded-xl"><i class="bx bx-trash"></i></button>`
+      : `<button type="button" onclick="activateProduct(${product.id})" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 font-bold text-emerald-700 transition-colors hover:bg-emerald-100"><i class="bx bx-check-circle text-base"></i><span>Aktifkan</span></button>`;
+    return `<tr class="hover:bg-slate-50 transition-all text-xs ${isActive ? '' : 'bg-slate-50/60 text-slate-500'}">
       <td class="p-4 pl-6"><div class="font-bold text-slate-900">${escapeHtml(product.sku)}</div><div class="font-mono text-[10px] text-slate-400">${escapeHtml(product.barcode)}</div></td>
       <td class="p-4 font-bold text-slate-800">${escapeHtml(product.name)}</td><td class="p-4">${escapeHtml(product.category || '')}</td>
       <td class="p-4 text-right">${formatIDR(product.capital)}</td><td class="p-4 text-right font-bold">${formatIDR(product.price)}</td>
       <td class="p-4 text-center font-extrabold ${out ? 'text-rose-700' : low ? 'text-red-600' : 'text-slate-800'}">${formatPlainNumber(product.stock)}</td>
       <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${out ? 'bg-rose-100 text-rose-700' : low ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}">${out ? 'Habis' : low ? 'Menipis' : 'Aman'}</span></td>
-      <td class="p-4 pr-6 text-center"><button onclick="editProduct(${product.id})" class="p-2 bg-slate-50 hover:bg-amber-50 hover:text-amber-600 text-slate-400 rounded-xl"><i class="bx bx-edit"></i></button> <button onclick="deleteProduct(${product.id})" class="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-400 rounded-xl"><i class="bx bx-trash"></i></button></td>
+      <td class="p-4 text-center"><span class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-200 text-slate-600'}"><span class="h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}"></span>${isActive ? 'Aktif' : 'Nonaktif'}</span></td>
+      <td class="p-4 pr-6 text-center"><div class="flex items-center justify-center gap-1"><button type="button" onclick="editProduct(${product.id})" title="Edit produk" aria-label="Edit ${escapeHtml(product.name)}" class="p-2 bg-slate-50 hover:bg-amber-50 hover:text-amber-600 text-slate-400 rounded-xl"><i class="bx bx-edit"></i></button>${statusAction}</div></td>
     </tr>`;
   }).join('');
   renderTablePagination('inventory', filtered.length, 'inventoryPagination');
@@ -1244,13 +1287,18 @@ function openProductModal() {
   setNumberInputValue('pMinStock', 5);
   byId('pId').value = '';
   byId('pImgUrl').value = '';
+  updateProductImagePreview();
   byId('modalTitle').textContent = 'Tambah Menu';
   byId('productModal').classList.remove('hidden');
 }
-function closeProductModal() { byId('productModal').classList.add('hidden'); }
+function closeProductModal() {
+  byId('productModal').classList.add('hidden');
+  updateProductImagePreview();
+}
 function editProduct(id) {
   const product = products.find((item) => Number(item.id) === Number(id));
   if (!product) return;
+  byId('productForm').reset();
   byId('pId').value = product.id;
   byId('pBarcode').value = product.barcode;
   byId('pName').value = product.name;
@@ -1260,6 +1308,7 @@ function editProduct(id) {
   setNumberInputValue('pStock', product.stock);
   setNumberInputValue('pMinStock', product.minStock);
   byId('pImgUrl').value = product.image || '';
+  updateProductImagePreview(product.image || '');
   byId('modalTitle').textContent = 'Edit Menu';
   byId('productModal').classList.remove('hidden');
 }
@@ -1301,7 +1350,24 @@ function deleteProduct(id) {
     } finally {
       setActionLoading(false);
     }
-  });
+  }, { confirmText: 'Ya, Proses', icon: 'bx-trash' });
+}
+
+function activateProduct(id) {
+  const product = products.find((item) => Number(item.id) === Number(id));
+  if (!product) return;
+  showCustomConfirm(`Aktifkan kembali ${product.name}? Produk akan kembali tersedia di halaman kasir.`, async () => {
+    try {
+      setActionLoading(true, 'Mengaktifkan menu...');
+      const response = await api(`/api/products/${id}`, { method: 'PUT', body: { is_active: true } });
+      await bootstrapApplication({ quiet: true });
+      showToast(response.message);
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  }, { title: 'Aktifkan produk?', confirmText: 'Ya, Aktifkan', icon: 'bx-check-circle' });
 }
 
 function renderCategories() {

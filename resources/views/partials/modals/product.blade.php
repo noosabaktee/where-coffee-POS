@@ -10,8 +10,16 @@
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Foto Menu (File Upload / URL)</label>
           <div class="flex flex-col gap-2">
+            <div class="relative h-44 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50">
+              <img id="pImgPreview" alt="Preview foto menu" class="hidden h-full w-full object-cover">
+              <div id="pImgPreviewEmpty" class="flex h-full flex-col items-center justify-center gap-2 text-slate-400">
+                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm"><i class="bx bx-image-alt text-2xl"></i></span>
+                <span id="pImgPreviewEmptyText" class="text-xs font-semibold">Preview gambar akan tampil di sini</span>
+              </div>
+              <span class="absolute left-3 top-3 rounded-lg bg-slate-950/70 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">Preview</span>
+            </div>
             <input type="file" id="pImgFile" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:bg-red-50 file:text-[#C00000]" onchange="handleImageCompress(event)">
-            <input type="text" id="pImgUrl" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="URL Gambar...">
+            <input type="text" id="pImgUrl" oninput="updateProductImagePreview(this.value)" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="URL Gambar...">
           </div>
         </div>
         <div>
