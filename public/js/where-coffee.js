@@ -1300,6 +1300,7 @@ function editProduct(id) {
   if (!product) return;
   byId('productForm').reset();
   byId('pId').value = product.id;
+  byId('pSku').value = product.sku;
   byId('pBarcode').value = product.barcode;
   byId('pName').value = product.name;
   byId('pCategory').value = product.category_id;
@@ -1319,6 +1320,7 @@ async function saveProduct(event) {
   const imageValue = byId('pImgUrl').value.trim();
   const payload = {
     category_id: Number(byId('pCategory').value),
+    sku: byId('pSku').value.trim(),
     barcode: byId('pBarcode').value.trim(),
     name: byId('pName').value.trim(),
     cost_price: readNumberInput('pCapital'),

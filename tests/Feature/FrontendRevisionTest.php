@@ -73,6 +73,8 @@ class FrontendRevisionTest extends TestCase
             ->get('/inventori')
             ->assertOk()
             ->assertSee('pImgPreview', false)
+            ->assertSee('id="pSku"', false)
+            ->assertSee('Contoh: UTAMA-012')
             ->assertSee('inventoryStatusFilter', false)
             ->assertSee('<option value="active" selected>Produk Aktif</option>', false)
             ->assertSee('Status Produk');
