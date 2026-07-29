@@ -27,6 +27,7 @@ let peakHoursChartInstance = null;
 let dashboardMetrics = {};
 let roleMenus = {};
 let availableMenus = {};
+let suggestedReferences = {};
 let pendingConfirmAction = null;
 let isBootstrapping = false;
 const tablePagination = {
@@ -329,6 +330,7 @@ async function bootstrapApplication({ quiet = false } = {}) {
     dashboardMetrics = data.metrics || {};
     roleMenus = data.role_menus || {};
     availableMenus = data.available_menus || {};
+    suggestedReferences = data.suggested_references || {};
     mapSettings(data.settings);
 
     populateOutletSelector();
@@ -1286,6 +1288,7 @@ function openProductModal() {
   setNumberInputValue('pStock', 0);
   setNumberInputValue('pMinStock', 5);
   byId('pId').value = '';
+  byId('pSku').value = suggestedReferences.product_sku || '';
   byId('pImgUrl').value = '';
   updateProductImagePreview();
   byId('modalTitle').textContent = 'Tambah Menu';
@@ -1320,7 +1323,7 @@ async function saveProduct(event) {
   const imageValue = byId('pImgUrl').value.trim();
   const payload = {
     category_id: Number(byId('pCategory').value),
-    sku: byId('pSku').value.trim(),
+    sku: byId('pSku').value.trim().toUpperCase(),
     barcode: byId('pBarcode').value.trim(),
     name: byId('pName').value.trim(),
     cost_price: readNumberInput('pCapital'),
@@ -1376,20 +1379,20 @@ function renderCategories() {
   const body = byId('categoryTableBody');
   if (!body) return;
   const query = (byId('categorySearch')?.value || '').toLowerCase();
-  const filtered = categories.filter((category) => category.name.toLowerCase().includes(query));
+  const filtered = categories.filter((category) => [category.code, category.name].join(' ').toLowerCase().includes(query));
   const visible = pageSlice('categories', filtered, query);
   body.innerHTML = visible.length ? visible.map((category) => `<tr class="hover:bg-slate-50 transition-all text-xs"><td class="p-4 pl-6 font-bold text-slate-900">${escapeHtml(category.code)}</td><td class="p-4 font-bold text-slate-800">${escapeHtml(category.name)}</td><td class="p-4 pr-6 text-center"><button onclick="editCategory(${category.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-edit"></i></button> <button onclick="deleteCategory(${category.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-trash"></i></button></td></tr>`).join('') : '<tr><td colspan="3" class="p-8 text-center text-slate-400">Kategori tidak ditemukan</td></tr>';
   renderTablePagination('categories', filtered.length, 'categoryPagination');
 }
 function openCategoryModal() { byId('categoryForm').reset(); byId('catId').value = ''; byId('categoryModalTitle').textContent = 'Tambah Kategori Baru'; byId('categoryModal').classList.remove('hidden'); }
 function closeCategoryModal() { byId('categoryModal').classList.add('hidden'); }
-function editCategory(id) { const category = categories.find((item) => Number(item.id) === Number(id)); if (!category) return; byId('catId').value = category.id; byId('catName').value = category.name; byId('categoryModalTitle').textContent = 'Edit Kategori'; byId('categoryModal').classList.remove('hidden'); }
+function editCategory(id) { const category = categories.find((item) => Number(item.id) === Number(id)); if (!category) return; byId('catId').value = category.id; byId('catCode').value = category.code || ''; byId('catName').value = category.name; byId('categoryModalTitle').textContent = 'Edit Kategori'; byId('categoryModal').classList.remove('hidden'); }
 async function saveCategory(event) {
   event.preventDefault();
   const id = byId('catId').value;
   try {
     setActionLoading(true, id ? 'Memperbarui kategori...' : 'Menambahkan kategori...');
-    const response = await api(id ? `/api/categories/${id}` : '/api/categories', { method: id ? 'PUT' : 'POST', body: { name: byId('catName').value.trim() } });
+    const response = await api(id ? `/api/categories/${id}` : '/api/categories', { method: id ? 'PUT' : 'POST', body: { code: byId('catCode').value.trim().toUpperCase(), name: byId('catName').value.trim() } });
     closeCategoryModal();
     await bootstrapApplication({ quiet: true });
     showToast(response.message);
@@ -1557,13 +1560,13 @@ function renderExpenses() {
   body.innerHTML = visible.length ? visible.map((expense) => `<tr class="hover:bg-slate-50 text-xs"><td class="p-4 pl-6 font-bold">${escapeHtml(expense.expense_number)}</td><td class="p-4">${escapeHtml(expense.date)}</td><td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded">${escapeHtml(expense.category)}</span></td><td class="p-4 truncate max-w-[220px]" title="${escapeHtml(expense.desc)}">${escapeHtml(expense.desc)}</td><td class="p-4 text-right font-bold text-[#C00000]">${formatIDR(expense.amount)}</td><td class="p-4 pr-6 text-center"><button onclick="editExpense(${expense.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-edit"></i></button> <button onclick="deleteExpense(${expense.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-trash"></i></button></td></tr>`).join('') : '<tr><td colspan="6" class="p-8 text-center text-slate-400">Pengeluaran tidak ditemukan</td></tr>';
   renderTablePagination('expenses', filtered.length, 'expensePagination');
 }
-function openExpenseModal() { byId('expenseForm').reset(); setNumberInputValue('expAmount', 0); byId('expId').value = ''; byId('expenseModalTitle').textContent = 'Catat Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
+function openExpenseModal() { byId('expenseForm').reset(); setNumberInputValue('expAmount', 0); byId('expId').value = ''; byId('expCode').value = suggestedReferences.expense_number || ''; byId('expenseModalTitle').textContent = 'Catat Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
 function closeExpenseModal() { byId('expenseModal').classList.add('hidden'); }
-function editExpense(id) { const expense = expenses.find((item) => Number(item.id) === Number(id)); if (!expense) return; byId('expId').value = expense.id; byId('expCategory').value = expense.category; byId('expDesc').value = expense.desc; setNumberInputValue('expAmount', expense.amount); byId('expenseModalTitle').textContent = 'Edit Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
+function editExpense(id) { const expense = expenses.find((item) => Number(item.id) === Number(id)); if (!expense) return; byId('expenseForm').reset(); byId('expId').value = expense.id; byId('expCode').value = expense.expense_number; byId('expCategory').value = expense.category; byId('expDesc').value = expense.desc; setNumberInputValue('expAmount', expense.amount); byId('expenseModalTitle').textContent = 'Edit Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
 async function saveExpense(event) {
   event.preventDefault();
   const id = byId('expId').value;
-  const payload = { category: byId('expCategory').value, description: byId('expDesc').value.trim(), amount: readNumberInput('expAmount'), payment_method: 'Tunai' };
+  const payload = { expense_number: byId('expCode').value.trim().toUpperCase(), category: byId('expCategory').value, description: byId('expDesc').value.trim(), amount: readNumberInput('expAmount'), payment_method: 'Tunai' };
   try {
     setActionLoading(true, id ? 'Memperbarui pengeluaran...' : 'Menyimpan pengeluaran...');
     const response = await api(id ? `/api/expenses/${id}` : '/api/expenses', { method: id ? 'PUT' : 'POST', body: payload });

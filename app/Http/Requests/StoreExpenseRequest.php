@@ -15,6 +15,7 @@ class StoreExpenseRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'expense_number' => ['nullable', 'string', 'max:40', Rule::unique('expenses', 'expense_number')],
             'expense_date' => ['nullable', 'date'],
             'category' => ['required', 'string', 'max:80'],
             'description' => ['required', 'string', 'max:255'],

@@ -8,6 +8,11 @@
       <form id="expenseForm" onsubmit="saveExpense(event)" class="p-6 overflow-y-auto space-y-4">
         <input type="hidden" id="expId">
         <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">ID CODE</label>
+          <input type="text" id="expCode" required maxlength="40" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase" placeholder="Contoh: EXP-UTAMA-260729-AB12">
+          <p class="mt-1.5 text-[11px] text-slate-400">Dibuat otomatis saat menambah biaya dan tetap bisa diubah.</p>
+        </div>
+        <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Kategori</label>
           <select id="expCategory" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
             <option value="Bahan Baku">Bahan Baku</option>

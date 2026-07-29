@@ -20,14 +20,18 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\DashboardService;
 use App\Services\MenuPermissionMap;
+use App\Services\ReferenceNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
 class BootstrapController extends Controller
 {
-    public function __invoke(Request $request, DashboardService $dashboard): JsonResponse
-    {
+    public function __invoke(
+        Request $request,
+        DashboardService $dashboard,
+        ReferenceNumberService $references,
+    ): JsonResponse {
         /** @var Outlet $outlet */
         $outlet = $request->attributes->get('current_outlet');
         /** @var User $user */
@@ -116,6 +120,14 @@ class BootstrapController extends Controller
             'role_menus' => $roleMenus,
             'available_menus' => $page === 'setting' ? MenuPermissionMap::all() : [],
             'metrics' => $metrics,
+            'suggested_references' => [
+                'product_sku' => $page === 'inventori' && $user->can('products.create')
+                    ? $references->productSku($outlet)
+                    : null,
+                'expense_number' => $page === 'biaya' && $user->can('expenses.create')
+                    ? $references->expense($outlet)
+                    : null,
+            ],
         ]);
     }
 }

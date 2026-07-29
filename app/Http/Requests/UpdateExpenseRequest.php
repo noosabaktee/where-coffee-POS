@@ -14,7 +14,10 @@ class UpdateExpenseRequest extends FormRequest
 
     public function rules(): array
     {
+        $expense = $this->route('expense');
+
         return [
+            'expense_number' => ['sometimes', 'required', 'string', 'max:40', Rule::unique('expenses', 'expense_number')->ignore($expense)],
             'expense_date' => ['sometimes', 'date'],
             'category' => ['sometimes', 'required', 'string', 'max:80'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],

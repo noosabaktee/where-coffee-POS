@@ -25,11 +25,12 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">ID SKU</label>
-            <input type="text" id="pSku" required maxlength="40" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="">
+            <input type="text" id="pSku" required maxlength="40" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Contoh: UTAMA-012">
+            <p class="mt-1.5 text-[11px] text-slate-400">Dibuat otomatis saat menambah menu dan tetap bisa diubah.</p>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Barcode</label>
-            <input type="text" id="pBarcode" required maxlength="80" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="">
+            <input type="text" id="pBarcode" required maxlength="80" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Contoh: PST-CRN-01">
           </div>
         </div>
         <div>

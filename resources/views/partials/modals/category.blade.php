@@ -8,6 +8,10 @@
       <form id="categoryForm" onsubmit="saveCategory(event)" class="p-6 space-y-4">
         <input type="hidden" id="catId">
         <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">ID CODE</label>
+          <input type="text" id="catCode" required maxlength="30" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase" placeholder="Contoh: CAT-PST">
+        </div>
+        <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Nama Kategori</label>
           <input type="text" id="catName" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
         </div>

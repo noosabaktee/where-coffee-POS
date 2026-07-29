@@ -19,6 +19,7 @@ class ExpenseController extends Controller
         /** @var Outlet $outlet */
         $outlet = $request->attributes->get('current_outlet');
         $expenses = Expense::query()->with(['outlet', 'creator'])->forOutlet($outlet)->latest('expense_date')->get();
+
         return response()->json(ExpenseResource::collection($expenses)->resolve($request));
     }
 
@@ -27,11 +28,12 @@ class ExpenseController extends Controller
         $this->authorize('create', Expense::class);
         /** @var Outlet $outlet */
         $outlet = $request->attributes->get('current_outlet');
+        $data = $request->validated();
+        $data['expense_number'] ??= $references->expense($outlet);
         $expense = Expense::query()->create([
-            ...$request->validated(),
+            ...$data,
             'outlet_id' => $outlet->id,
             'created_by' => $request->user()->id,
-            'expense_number' => $references->expense($outlet),
             'expense_date' => $request->input('expense_date', now($outlet->timezone)->toDateString()),
         ]);
 
@@ -45,6 +47,7 @@ class ExpenseController extends Controller
     {
         $this->authorize('update', $expense);
         $expense->update($request->validated());
+
         return response()->json([
             'message' => 'Pengeluaran berhasil diperbarui.',
             'data' => (new ExpenseResource($expense->fresh()->load(['outlet', 'creator'])))->resolve($request),
@@ -55,6 +58,7 @@ class ExpenseController extends Controller
     {
         $this->authorize('delete', $expense);
         $expense->delete();
+
         return response()->json(['message' => 'Pengeluaran berhasil dihapus.']);
     }
 }

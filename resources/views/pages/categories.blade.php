@@ -11,14 +11,14 @@
           <div class="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
             <div class="relative">
               <i class="bx bx-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-              <input type="text" id="categorySearch" oninput="renderCategories()" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 focus:border-[#C00000] focus:bg-white outline-none rounded-xl text-sm transition-all" placeholder="Cari nama kategori...">
+              <input type="text" id="categorySearch" oninput="renderCategories()" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 focus:border-[#C00000] focus:bg-white outline-none rounded-xl text-sm transition-all" placeholder="Cari ID CODE atau nama kategori...">
             </div>
           </div>
           <div class="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full border-collapse text-left text-sm">
                 <thead class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
-                  <tr><th class="p-4 pl-6">ID Kategori</th><th class="p-4">Nama Kategori</th><th class="p-4 pr-6 text-center">Aksi</th></tr>
+                  <tr><th class="p-4 pl-6">ID CODE</th><th class="p-4">Nama Kategori</th><th class="p-4 pr-6 text-center">Aksi</th></tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100" id="categoryTableBody"></tbody>
               </table>

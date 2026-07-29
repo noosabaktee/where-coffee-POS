@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Expense;
 use App\Models\Outlet;
+use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
 
@@ -35,5 +36,27 @@ class ReferenceNumberService
         } while (Expense::query()->where('expense_number', $number)->exists());
 
         return $number;
+    }
+
+    public function productSku(Outlet $outlet): string
+    {
+        $prefix = Str::upper((string) preg_replace('/[^A-Za-z0-9]/', '', $outlet->code)).'-';
+        $lastSequence = Product::query()
+            ->forOutlet($outlet)
+            ->where('sku', 'like', $prefix.'%')
+            ->pluck('sku')
+            ->map(function (string $sku) use ($prefix): int {
+                return preg_match('/^'.preg_quote($prefix, '/').'(\d+)$/', $sku, $matches)
+                    ? (int) $matches[1]
+                    : 0;
+            })
+            ->max() ?? 0;
+
+        do {
+            $lastSequence++;
+            $sku = $prefix.str_pad((string) $lastSequence, 3, '0', STR_PAD_LEFT);
+        } while (Product::query()->forOutlet($outlet)->where('sku', $sku)->exists());
+
+        return $sku;
     }
 }
