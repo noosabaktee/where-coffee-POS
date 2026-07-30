@@ -816,12 +816,14 @@ function renderAnalytics() {
   if (cashflowCanvas && window.Chart) {
     cashflowChartInstance = new Chart(cashflowCanvas, {
       type: 'line',
-      data: { labels: trend.map((row) => row.label), datasets: [
-        { label: 'Pendapatan', data: trend.map((row) => row.revenue), borderColor: '#C00000', backgroundColor: 'rgba(192,0,0,.08)', fill: true, tension: .38, pointRadius: trend.length > 40 ? 1 : 3, borderWidth: 2.5 },
-        { label: 'Laba Kotor', data: trend.map((row) => row.gross_profit), borderColor: '#4f46e5', tension: .35, pointRadius: trend.length > 40 ? 1 : 3, borderWidth: 2 },
-        { label: 'Biaya', data: trend.map((row) => row.expenses), borderColor: '#f59e0b', borderDash: [5, 5], tension: .3, pointRadius: 0, borderWidth: 2 },
-        { label: 'Laba Bersih', data: trend.map((row) => row.net_profit), borderColor: '#059669', tension: .35, pointRadius: trend.length > 40 ? 1 : 3, borderWidth: 2 },
-      ] },
+      data: {
+        labels: trend.map((row) => row.label), datasets: [
+          { label: 'Pendapatan', data: trend.map((row) => row.revenue), borderColor: '#C00000', backgroundColor: 'rgba(192,0,0,.08)', fill: true, tension: .38, pointRadius: trend.length > 40 ? 1 : 3, borderWidth: 2.5 },
+          { label: 'Laba Kotor', data: trend.map((row) => row.gross_profit), borderColor: '#4f46e5', tension: .35, pointRadius: trend.length > 40 ? 1 : 3, borderWidth: 2 },
+          { label: 'Biaya', data: trend.map((row) => row.expenses), borderColor: '#f59e0b', borderDash: [5, 5], tension: .3, pointRadius: 0, borderWidth: 2 },
+          { label: 'Laba Bersih', data: trend.map((row) => row.net_profit), borderColor: '#059669', tension: .35, pointRadius: trend.length > 40 ? 1 : 3, borderWidth: 2 },
+        ]
+      },
       options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 16 } }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatIDR(context.raw)}` } } }, scales: { y: { beginAtZero: true, ticks: { callback: (value) => value >= 1000000 ? `${Math.round(value / 1000000)} jt` : `${Math.round(value / 1000)} rb` }, grid: { color: 'rgba(148,163,184,.12)' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 12, maxRotation: 0 } } } },
     });
   }
@@ -915,13 +917,15 @@ function addToCart(productId) {
 function renderCart() {
   const list = byId('cartList');
   if (!list) return;
-  list.innerHTML = cart.length ? cart.map((item, index) => { const itemImage = getProductImage(item); return `
+  list.innerHTML = cart.length ? cart.map((item, index) => {
+    const itemImage = getProductImage(item); return `
     <div class="py-3 flex items-center gap-3 cart-item-enter">
       <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-none overflow-hidden"><img src="${escapeHtml(itemImage)}" class="w-full h-full object-cover"></div>
       <div class="flex-1 min-w-0"><p class="text-xs font-bold text-slate-900 truncate">${escapeHtml(item.name)}</p><p class="text-[10px] text-slate-400">${formatIDR(item.price)}</p></div>
       <div class="flex items-center gap-1 bg-slate-50 rounded-xl p-1"><button onclick="updateCartQty(${index}, -1)" class="w-7 h-7 rounded-lg hover:bg-white">−</button><span class="w-6 text-center text-xs font-bold">${item.qty}</span><button onclick="updateCartQty(${index}, 1)" class="w-7 h-7 rounded-lg hover:bg-white">+</button></div>
       <button onclick="removeFromCart(${index})" class="p-1.5 text-slate-300 hover:text-red-500"><i class="bx bx-x"></i></button>
-    </div>`; }).join('') : '<div class="py-10 text-center text-slate-400"><i class="bx bx-cart text-4xl block mb-2"></i><p class="text-xs">Keranjang masih kosong</p></div>';
+    </div>`;
+  }).join('') : '<div class="py-10 text-center text-slate-400"><i class="bx bx-cart text-4xl block mb-2"></i><p class="text-xs">Keranjang masih kosong</p></div>';
   calculateCartTotal();
 }
 
@@ -1637,6 +1641,21 @@ function deleteUser(id) {
   });
 }
 
+function deleteTransaction(id) {
+  showCustomConfirm('Hapus transaksi ini?', async () => {
+    try {
+      setActionLoading(true, 'Menghapus transaksi...');
+      const response = await api(`/api/transactions/${id}`, { method: 'DELETE' });
+      await bootstrapApplication({ quiet: true });
+      showToast(response.message);
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  });
+}
+
 function renderReport() {
   const body = byId('reportTableBody');
   if (!body) return;
@@ -1645,7 +1664,7 @@ function renderReport() {
   const visible = pageSlice('reports', filtered, query);
   body.innerHTML = visible.length ? visible.map((transaction) => {
     const summary = transaction.items.map((item) => `${item.name} (x${item.qty})`).join(', ');
-    return `<tr class="hover:bg-slate-50 text-xs"><td class="p-4 pl-6 font-bold font-mono">${escapeHtml(transaction.invoice_number)}</td><td class="p-4 text-slate-500">${escapeHtml(transaction.time)}</td><td class="p-4 truncate max-w-[190px]" title="${escapeHtml(summary)}">${escapeHtml(summary)}</td><td class="p-4 text-right">${formatIDR(transaction.subtotal)}</td><td class="p-4 text-center"><span class="px-2 py-0.5 bg-red-50 text-[#C00000] rounded">${transaction.discount}%</span></td><td class="p-4 text-right font-extrabold">${formatIDR(transaction.total)}</td><td class="p-4 text-right text-emerald-600 font-extrabold">${formatIDR(transaction.profit)}</td><td class="p-4 pr-6 text-center"><button onclick="openInvoiceModal(transactions.find(item => item.id === ${transaction.id}))" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-printer"></i></button></td></tr>`;
+    return `<tr class="hover:bg-slate-50 text-xs"><td class="p-4 pl-6 font-bold font-mono">${escapeHtml(transaction.invoice_number)}</td><td class="p-4 text-slate-500">${escapeHtml(transaction.time)}</td><td class="p-4 truncate max-w-[190px]" title="${escapeHtml(summary)}">${escapeHtml(summary)}</td><td class="p-4 text-right">${formatIDR(transaction.subtotal)}</td><td class="p-4 text-center"><span class="px-2 py-0.5 bg-red-50 text-[#C00000] rounded">${transaction.discount}%</span></td><td class="p-4 text-right font-extrabold">${formatIDR(transaction.total)}</td><td class="p-4 text-right text-emerald-600 font-extrabold">${formatIDR(transaction.profit)}</td><td class="p-4 pr-6 text-center"><button onclick="openInvoiceModal(transactions.find(item => item.id === ${transaction.id}))" class="p-2 bg-slate-50 text-slate-400 rounded-xl" title="Cetak invoice"><i class="bx bx-printer"></i></button> <button onclick="deleteTransaction(${transaction.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl" title="Hapus transaksi"><i class="bx bx-trash"></i></button></td></tr>`;
   }).join('') : '<tr><td colspan="8" class="p-8 text-center text-slate-400">Transaksi tidak ditemukan</td></tr>';
   renderTablePagination('reports', filtered.length, 'reportPagination');
 }

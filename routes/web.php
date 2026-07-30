@@ -64,7 +64,7 @@ Route::middleware(['auth', 'resolve.outlet'])->group(function (): void {
         Route::apiResource('users', UserController::class)->except('show');
 
         Route::get('/transactions/export', [TransactionController::class, 'export'])->name('transactions.export');
-        Route::apiResource('transactions', TransactionController::class)->only(['index', 'store', 'show']);
+        Route::apiResource('transactions', TransactionController::class)->only(['index', 'store', 'show', 'destroy']);
 
         Route::get('/settings', [SettingController::class, 'show'])->name('settings.show');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');

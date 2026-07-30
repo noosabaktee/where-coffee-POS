@@ -23,8 +23,8 @@ class TransactionController extends Controller
         $transactions = Transaction::query()
             ->with(['items', 'customer', 'user', 'outlet'])
             ->forOutlet($outlet)
-            ->when($request->filled('from'), fn ($query) => $query->whereDate('transacted_at', '>=', $request->date('from')))
-            ->when($request->filled('to'), fn ($query) => $query->whereDate('transacted_at', '<=', $request->date('to')))
+            ->when($request->filled('from'), fn($query) => $query->whereDate('transacted_at', '>=', $request->date('from')))
+            ->when($request->filled('to'), fn($query) => $query->whereDate('transacted_at', '<=', $request->date('to')))
             ->latest('transacted_at')
             ->limit(2000)
             ->get();
@@ -51,13 +51,21 @@ class TransactionController extends Controller
         return response()->json((new TransactionResource($transaction->load(['items', 'customer', 'user', 'outlet'])))->resolve($request));
     }
 
+    public function destroy(Request $request, Transaction $transaction): JsonResponse
+    {
+        $this->authorize('delete', $transaction);
+        $transaction->delete();
+
+        return response()->json(['message' => 'Transaksi berhasil dihapus.']);
+    }
+
     public function export(Request $request, TransactionReportExcel $report): StreamedResponse
     {
         abort_unless($request->user()->can('reports.export'), 403);
 
         /** @var Outlet $outlet */
         $outlet = $request->attributes->get('current_outlet');
-        $filename = 'where-coffee-'.str($outlet->code)->slug().'-'.now($outlet->timezone)->format('Ymd-His').'.xlsx';
+        $filename = 'where-coffee-' . str($outlet->code)->slug() . '-' . now($outlet->timezone)->format('Ymd-His') . '.xlsx';
         $spreadsheet = $report->build($outlet);
 
         return response()->streamDownload(function () use ($spreadsheet): void {
