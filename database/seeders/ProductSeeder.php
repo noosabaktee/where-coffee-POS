@@ -12,7 +12,7 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $categories = Category::query()->get()->keyBy('name');
+        $categories = Category::query()->ofType(Category::TYPE_PRODUCT)->get()->keyBy('name');
         $imageMap = [
             'COF-ESP-01' => '/images/menu/espresso.png',
             'COF-AME-01' => '/images/menu/iced-americano.png',

@@ -7,6 +7,11 @@
       </div>
       <form id="categoryForm" onsubmit="saveCategory(event)" class="p-6 space-y-4">
         <input type="hidden" id="catId">
+        <input type="hidden" id="catType" value="product">
+        <div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-red-500">Jenis Kategori</p>
+          <p id="catTypeLabel" class="mt-0.5 text-sm font-extrabold text-red-800">Kategori Produk</p>
+        </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">ID CODE</label>
           <input type="text" id="catCode" required maxlength="30" autocomplete="off" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase" placeholder="Contoh: CAT-PST">

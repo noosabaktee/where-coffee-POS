@@ -6,6 +6,7 @@ let cart = [];
 let customers = [];
 let expenses = [];
 let categories = [];
+let activeCategoryType = 'product';
 let users = [];
 let outlets = [];
 let currentUser = null;
@@ -590,7 +591,10 @@ function compressFileBase(event, maxWidth, maxHeight, callback) {
 }
 
 function populateCategoryDropdowns() {
-  const options = categories.filter((category) => category.is_active !== false).map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`).join('');
+  const options = categories
+    .filter((category) => (category.type || 'product') === 'product' && category.is_active !== false)
+    .map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
+    .join('');
   const pos = byId('posFilterCategory');
   const inventory = byId('inventoryCategoryFilter');
   const modal = byId('pCategory');
@@ -605,6 +609,25 @@ function populateCategoryDropdowns() {
     inventory.value = value;
   }
   if (modal) modal.innerHTML = options;
+  populateExpenseCategoryDropdown();
+}
+
+function populateExpenseCategoryDropdown(selectedValue = '') {
+  const select = byId('expCategory');
+  if (!select) return;
+
+  const previousValue = selectedValue || select.value;
+  const available = categories.filter((category) => category.type === 'expense' && category.is_active !== false);
+  const selectedCategory = categories.find((category) => category.type === 'expense' && category.name === previousValue);
+  if (selectedCategory && !available.some((category) => Number(category.id) === Number(selectedCategory.id))) {
+    available.push(selectedCategory);
+  }
+
+  select.innerHTML = available.length
+    ? available.map((category) => `<option value="${escapeHtml(category.name)}">${escapeHtml(category.name)}${category.is_active === false ? ' (Nonaktif)' : ''}</option>`).join('')
+    : '<option value="">Belum ada kategori biaya operasional</option>';
+  select.disabled = available.length === 0;
+  if (previousValue) select.value = previousValue;
 }
 
 function refreshAllUI() {
@@ -1383,20 +1406,47 @@ function renderCategories() {
   const body = byId('categoryTableBody');
   if (!body) return;
   const query = (byId('categorySearch')?.value || '').toLowerCase();
-  const filtered = categories.filter((category) => [category.code, category.name].join(' ').toLowerCase().includes(query));
-  const visible = pageSlice('categories', filtered, query);
+  const filtered = categories.filter((category) => category.type === activeCategoryType && [category.code, category.name].join(' ').toLowerCase().includes(query));
+  const visible = pageSlice('categories', filtered, `${activeCategoryType}|${query}`);
   body.innerHTML = visible.length ? visible.map((category) => `<tr class="hover:bg-slate-50 transition-all text-xs"><td class="p-4 pl-6 font-bold text-slate-900">${escapeHtml(category.code)}</td><td class="p-4 font-bold text-slate-800">${escapeHtml(category.name)}</td><td class="p-4 pr-6 text-center"><button onclick="editCategory(${category.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-edit"></i></button> <button onclick="deleteCategory(${category.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-trash"></i></button></td></tr>`).join('') : '<tr><td colspan="3" class="p-8 text-center text-slate-400">Kategori tidak ditemukan</td></tr>';
   renderTablePagination('categories', filtered.length, 'categoryPagination');
 }
-function openCategoryModal() { byId('categoryForm').reset(); byId('catId').value = ''; byId('categoryModalTitle').textContent = 'Tambah Kategori Baru'; byId('categoryModal').classList.remove('hidden'); }
+function setCategoryType(type) {
+  if (!['product', 'expense'].includes(type)) return;
+  activeCategoryType = type;
+  tablePagination.categories.page = 1;
+  const productTab = byId('categoryProductTab');
+  const expenseTab = byId('categoryExpenseTab');
+  const activeClass = 'rounded-xl bg-white px-4 py-3 text-sm font-extrabold text-[#C00000] shadow-sm transition-all';
+  const inactiveClass = 'rounded-xl px-4 py-3 text-sm font-bold text-slate-500 transition-all hover:text-slate-800';
+  if (productTab) {
+    productTab.className = type === 'product' ? activeClass : inactiveClass;
+    productTab.setAttribute('aria-selected', type === 'product' ? 'true' : 'false');
+  }
+  if (expenseTab) {
+    expenseTab.className = type === 'expense' ? activeClass : inactiveClass;
+    expenseTab.setAttribute('aria-selected', type === 'expense' ? 'true' : 'false');
+  }
+  if (byId('categoryAddLabel')) {
+    byId('categoryAddLabel').textContent = type === 'product' ? 'Tambah Kategori Produk' : 'Tambah Kategori Biaya';
+  }
+  renderCategories();
+}
+function setCategoryModalType(type) {
+  const isExpense = type === 'expense';
+  byId('catType').value = isExpense ? 'expense' : 'product';
+  byId('catTypeLabel').textContent = isExpense ? 'Kategori Biaya Operasional' : 'Kategori Produk';
+  byId('catCode').placeholder = isExpense ? 'Contoh: EXP-UTL' : 'Contoh: CAT-PST';
+}
+function openCategoryModal() { byId('categoryForm').reset(); byId('catId').value = ''; setCategoryModalType(activeCategoryType); byId('categoryModalTitle').textContent = activeCategoryType === 'expense' ? 'Tambah Kategori Biaya Operasional' : 'Tambah Kategori Produk'; byId('categoryModal').classList.remove('hidden'); }
 function closeCategoryModal() { byId('categoryModal').classList.add('hidden'); }
-function editCategory(id) { const category = categories.find((item) => Number(item.id) === Number(id)); if (!category) return; byId('catId').value = category.id; byId('catCode').value = category.code || ''; byId('catName').value = category.name; byId('categoryModalTitle').textContent = 'Edit Kategori'; byId('categoryModal').classList.remove('hidden'); }
+function editCategory(id) { const category = categories.find((item) => Number(item.id) === Number(id)); if (!category) return; byId('catId').value = category.id; setCategoryModalType(category.type); byId('catCode').value = category.code || ''; byId('catName').value = category.name; byId('categoryModalTitle').textContent = category.type === 'expense' ? 'Edit Kategori Biaya Operasional' : 'Edit Kategori Produk'; byId('categoryModal').classList.remove('hidden'); }
 async function saveCategory(event) {
   event.preventDefault();
   const id = byId('catId').value;
   try {
     setActionLoading(true, id ? 'Memperbarui kategori...' : 'Menambahkan kategori...');
-    const response = await api(id ? `/api/categories/${id}` : '/api/categories', { method: id ? 'PUT' : 'POST', body: { code: byId('catCode').value.trim().toUpperCase(), name: byId('catName').value.trim() } });
+    const response = await api(id ? `/api/categories/${id}` : '/api/categories', { method: id ? 'PUT' : 'POST', body: { code: byId('catCode').value.trim().toUpperCase(), name: byId('catName').value.trim(), type: byId('catType').value } });
     closeCategoryModal();
     await bootstrapApplication({ quiet: true });
     showToast(response.message);
@@ -1407,7 +1457,8 @@ async function saveCategory(event) {
   }
 }
 function deleteCategory(id) {
-  showCustomConfirm('Hapus kategori ini?', async () => {
+  const category = categories.find((item) => Number(item.id) === Number(id));
+  showCustomConfirm(`Hapus kategori ${category?.name || 'ini'}?`, async () => {
     try {
       setActionLoading(true, 'Menghapus kategori...');
       const response = await api(`/api/categories/${id}`, { method: 'DELETE' });
@@ -1564,12 +1615,13 @@ function renderExpenses() {
   body.innerHTML = visible.length ? visible.map((expense) => `<tr class="hover:bg-slate-50 text-xs"><td class="p-4 pl-6 font-bold">${escapeHtml(expense.expense_number)}</td><td class="p-4">${escapeHtml(expense.date)}</td><td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded">${escapeHtml(expense.category)}</span></td><td class="p-4 truncate max-w-[220px]" title="${escapeHtml(expense.desc)}">${escapeHtml(expense.desc)}</td><td class="p-4 text-right font-bold text-[#C00000]">${formatIDR(expense.amount)}</td><td class="p-4 pr-6 text-center"><button onclick="editExpense(${expense.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-edit"></i></button> <button onclick="deleteExpense(${expense.id})" class="p-2 bg-slate-50 text-slate-400 rounded-xl"><i class="bx bx-trash"></i></button></td></tr>`).join('') : '<tr><td colspan="6" class="p-8 text-center text-slate-400">Pengeluaran tidak ditemukan</td></tr>';
   renderTablePagination('expenses', filtered.length, 'expensePagination');
 }
-function openExpenseModal() { byId('expenseForm').reset(); setNumberInputValue('expAmount', 0); byId('expId').value = ''; byId('expCode').value = suggestedReferences.expense_number || ''; byId('expenseModalTitle').textContent = 'Catat Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
+function openExpenseModal() { byId('expenseForm').reset(); populateExpenseCategoryDropdown(); setNumberInputValue('expAmount', 0); byId('expId').value = ''; byId('expCode').value = suggestedReferences.expense_number || ''; byId('expenseModalTitle').textContent = 'Catat Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
 function closeExpenseModal() { byId('expenseModal').classList.add('hidden'); }
-function editExpense(id) { const expense = expenses.find((item) => Number(item.id) === Number(id)); if (!expense) return; byId('expenseForm').reset(); byId('expId').value = expense.id; byId('expCode').value = expense.expense_number; byId('expCategory').value = expense.category; byId('expDesc').value = expense.desc; setNumberInputValue('expAmount', expense.amount); byId('expenseModalTitle').textContent = 'Edit Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
+function editExpense(id) { const expense = expenses.find((item) => Number(item.id) === Number(id)); if (!expense) return; byId('expenseForm').reset(); populateExpenseCategoryDropdown(expense.category); byId('expId').value = expense.id; byId('expCode').value = expense.expense_number; byId('expCategory').value = expense.category; byId('expDesc').value = expense.desc; setNumberInputValue('expAmount', expense.amount); byId('expenseModalTitle').textContent = 'Edit Pengeluaran'; byId('expenseModal').classList.remove('hidden'); }
 async function saveExpense(event) {
   event.preventDefault();
   const id = byId('expId').value;
+  if (!byId('expCategory').value) return showToast('Tambahkan kategori biaya operasional terlebih dahulu di Master Kategori.', 'error');
   const payload = { expense_number: byId('expCode').value.trim().toUpperCase(), category: byId('expCategory').value, description: byId('expDesc').value.trim(), amount: readNumberInput('expAmount'), payment_method: 'Tunai' };
   try {
     setActionLoading(true, id ? 'Memperbarui pengeluaran...' : 'Menyimpan pengeluaran...');

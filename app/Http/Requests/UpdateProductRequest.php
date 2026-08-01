@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
 use App\Models\Outlet;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -20,7 +21,7 @@ class UpdateProductRequest extends FormRequest
         $product = $this->route('product');
 
         return [
-            'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
+            'category_id' => ['sometimes', 'required', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_PRODUCT)],
             'sku' => ['sometimes', 'required', 'string', 'max:40', Rule::unique('products')->where('outlet_id', $outlet->id)->ignore($product)],
             'barcode' => ['sometimes', 'required', 'string', 'max:80', Rule::unique('products')->where('outlet_id', $outlet->id)->ignore($product)],
             'name' => ['sometimes', 'required', 'string', 'max:160'],

@@ -14,13 +14,8 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Kategori</label>
-          <select id="expCategory" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-            <option value="Bahan Baku">Bahan Baku</option>
-            <option value="Utilitas">Utilitas (Listrik/Air)</option>
-            <option value="Gaji Karyawan">Gaji Karyawan</option>
-            <option value="Promosi & Marketing">Promosi</option>
-            <option value="Lain-lain">Lain-lain</option>
-          </select>
+          <select id="expCategory" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"></select>
+          <p class="mt-1.5 text-[11px] text-slate-400">Pilihan kategori dikelola melalui tab Biaya Operasional di Master Kategori.</p>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Deskripsi Biaya</label>

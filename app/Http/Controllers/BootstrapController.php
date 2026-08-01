@@ -52,8 +52,18 @@ class BootstrapController extends Controller
             ? Product::query()->with(['category', 'outlet'])->forOutlet($outlet)->orderBy('name')->get()
             : collect();
 
-        $categories = in_array($page, ['pos', 'inventori', 'kategori'], true) && $user->can('categories.view')
-            ? Category::query()->orderBy('sort_order')->orderBy('name')->get()
+        $canLoadCategories = ($page === 'kategori' && $user->can('categories.view'))
+            || (in_array($page, ['pos', 'inventori'], true) && $user->can('categories.view'))
+            || ($page === 'biaya' && $user->can('expenses.view'));
+
+        $categories = $canLoadCategories
+            ? Category::query()
+                ->when($page === 'biaya', fn ($query) => $query->ofType(Category::TYPE_EXPENSE))
+                ->when(in_array($page, ['pos', 'inventori'], true), fn ($query) => $query->ofType(Category::TYPE_PRODUCT))
+                ->orderBy('type')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get()
             : collect();
 
         // The POS page searches members on demand through /api/customers/search.

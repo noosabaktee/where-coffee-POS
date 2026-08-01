@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
 use App\Models\Outlet;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,7 +20,7 @@ class StoreProductRequest extends FormRequest
         $outlet = $this->attributes->get('current_outlet');
 
         return [
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_PRODUCT)],
             'sku' => ['nullable', 'string', 'max:40', Rule::unique('products')->where('outlet_id', $outlet->id)],
             'barcode' => ['required', 'string', 'max:80', Rule::unique('products')->where('outlet_id', $outlet->id)],
             'name' => ['required', 'string', 'max:160'],
